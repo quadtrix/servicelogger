@@ -2,6 +2,7 @@
 package servicelogger
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -31,6 +32,17 @@ type Logger struct {
 	keep             int
 	filehandle       *os.File
 	rotation_running bool
+	filters          FacilityFilters
+}
+
+type FacilityFilter struct {
+	filter string
+	level  LogLevel
+}
+
+type FacilityFilters struct {
+	count   int
+	filters []FacilityFilter
 }
 
 func logSizeStringToLogSizeInt64(lss string) (l int64, err error) {
@@ -80,7 +92,7 @@ func New(prefix string, filename string, minloglevel LogLevel, rotate bool, rota
 
 // LogTrace logs a message at TRACE level
 func (l Logger) LogTrace(function string, source string, text string) {
-	if l.MinLoglevel <= LL_TRACE {
+	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_TRACE {
 		l.logRotate()
 		l.base.Println(fmt.Sprintf("TRACE   [%s] %s.%s %s", function, l.prefix, source, text))
 	}
@@ -88,7 +100,7 @@ func (l Logger) LogTrace(function string, source string, text string) {
 
 // LogDebug logs a message at DEBUG level
 func (l Logger) LogDebug(function string, source string, text string) {
-	if l.MinLoglevel <= LL_DEBUG {
+	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_DEBUG {
 		l.logRotate()
 		l.base.Println(fmt.Sprintf("DEBUG   [%s] %s.%s %s", function, l.prefix, source, text))
 	}
@@ -96,7 +108,7 @@ func (l Logger) LogDebug(function string, source string, text string) {
 
 // LogInfo logs a message at INFO level
 func (l Logger) LogInfo(function string, source string, text string) {
-	if l.MinLoglevel <= LL_INFO {
+	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_INFO {
 		l.logRotate()
 		l.base.Println(fmt.Sprintf("INFO    [%s] %s.%s %s", function, l.prefix, source, text))
 	}
@@ -104,7 +116,7 @@ func (l Logger) LogInfo(function string, source string, text string) {
 
 // LogWarn logs a message at WARNING level
 func (l Logger) LogWarn(function string, source string, text string) {
-	if l.MinLoglevel <= LL_WARN {
+	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_WARN {
 		l.logRotate()
 		l.base.Println(fmt.Sprintf("WARNING [%s] %s.%s %s", function, l.prefix, source, text))
 	}
@@ -112,7 +124,7 @@ func (l Logger) LogWarn(function string, source string, text string) {
 
 // LogError logs a message at ERROR level
 func (l Logger) LogError(function string, source string, text string) {
-	if l.MinLoglevel <= LL_ERROR {
+	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_ERROR {
 		l.logRotate()
 		l.base.Println(fmt.Sprintf("ERROR   [%s] %s.%s %s", function, l.prefix, source, text))
 	}
@@ -120,7 +132,7 @@ func (l Logger) LogError(function string, source string, text string) {
 
 // LogFata logs a message at FATAL level and exits the application with the provided exit code
 func (l Logger) LogFatal(function string, source string, text string, exitcode int) {
-	if l.MinLoglevel <= LL_FATAL {
+	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_FATAL {
 		l.logRotate()
 		l.base.Println(fmt.Sprintf("FATAL   [%s] %s.%s %s", function, l.prefix, source, text))
 		fmt.Println(fmt.Sprintf("FATAL: [%s] %s.%s %s", function, l.prefix, source, text))
@@ -248,4 +260,47 @@ func (slog *Logger) ApplyNewSettings(newFile string, newLevel LogLevel, newRotat
 		return true
 	}
 	return false
+}
+
+func (slog *Logger) AddFacilityFilter(filtername string, filterlevel LogLevel) {
+	ffilter := FacilityFilter{
+		filter: filtername,
+		level:  filterlevel,
+	}
+	slog.filters.count++
+	slog.filters.filters = append(slog.filters.filters, ffilter)
+}
+
+func (slog *Logger) LoadFacilityFilters(filename string) error {
+	fcontents, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	var lfilters map[string]string
+	err = json.Unmarshal(fcontents, &lfilters)
+	if err != nil {
+		return err
+	}
+	for fname, flevel := range lfilters {
+		lflevel := StringToLogLevel(flevel)
+		slog.AddFacilityFilter(fname, lflevel)
+	}
+	return nil
+}
+
+func (slog Logger) getFilteredLogLevel(facility string) LogLevel {
+	var foundfilter int = -1
+	for n, filter := range slog.filters.filters {
+		if strings.HasPrefix(facility, filter.filter) {
+			if foundfilter > -1 {
+				if len(filter.filter) > len(slog.filters.filters[foundfilter].filter) {
+					foundfilter = n
+				}
+			}
+		}
+	}
+	if foundfilter > -1 {
+		return slog.filters.filters[foundfilter].level
+	}
+	return slog.MinLoglevel
 }
