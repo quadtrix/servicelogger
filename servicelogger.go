@@ -304,3 +304,7 @@ func (slog Logger) getFilteredLogLevel(facility string) LogLevel {
 	}
 	return slog.MinLoglevel
 }
+
+func (slog Logger) DumpLogFilters() FacilityFilters {
+	return slog.filters
+}
