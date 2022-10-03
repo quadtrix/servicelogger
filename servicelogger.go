@@ -289,19 +289,24 @@ func (slog *Logger) LoadFacilityFilters(filename string) error {
 }
 
 func (slog Logger) getFilteredLogLevel(facility string) LogLevel {
+	fmt.Println(fmt.Sprintf("Determining filtered level for facility %s", facility))
 	var foundfilter int = -1
 	for n, filter := range slog.filters.filters {
 		if strings.HasPrefix(facility, filter.filter) {
+			fmt.Println(fmt.Sprintf("Filter %s matches", filter.filter))
 			if foundfilter > -1 {
 				if len(filter.filter) > len(slog.filters.filters[foundfilter].filter) {
 					foundfilter = n
+					fmt.Println("This is now the best match")
 				}
 			}
 		}
 	}
 	if foundfilter > -1 {
+		fmt.Println(fmt.Sprintf("After checking filters, the best match is %s, with log level %s", slog.filters.filters[foundfilter].filter, LogLevelToString(slog.filters.filters[foundfilter].level)))
 		return slog.filters.filters[foundfilter].level
 	}
+	fmt.Println("No match was found, returning the default log level")
 	return slog.MinLoglevel
 }
 
