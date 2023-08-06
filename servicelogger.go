@@ -77,7 +77,7 @@ func New(prefix string, filename string, minloglevel LogLevel, rotate bool, rota
 	l.prefix = prefix
 	l.rotatesize, err = logSizeStringToLogSizeInt64(rotatesize)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("FATAL: Incorrect log rotation size: %s", err.Error()))
+		log.Fatalf("FATAL: Incorrect log rotation size: %s", err.Error())
 	}
 	l.filehandle, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
 	if err != nil {
@@ -213,7 +213,6 @@ func (l *Logger) logRotate() (err error) {
 			}
 			l.base = log.New(l.filehandle, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 			l.LogTrace("logRotate", "servicelogger", "Log rotated, reopened logwriter")
-			return nil
 		}
 		l.rotation_running = false
 	}
