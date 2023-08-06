@@ -91,7 +91,7 @@ func New(prefix string, filename string, minloglevel LogLevel, rotate bool, rota
 }
 
 // LogTrace logs a message at TRACE level
-func (l Logger) LogTrace(function string, source string, text string) {
+func (l *Logger) LogTrace(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_TRACE {
 		newbase, err := l.logRotate()
 		if err != nil {
@@ -103,7 +103,7 @@ func (l Logger) LogTrace(function string, source string, text string) {
 }
 
 // LogDebug logs a message at DEBUG level
-func (l Logger) LogDebug(function string, source string, text string) {
+func (l *Logger) LogDebug(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_DEBUG {
 		newbase, err := l.logRotate()
 		if err != nil {
@@ -115,7 +115,7 @@ func (l Logger) LogDebug(function string, source string, text string) {
 }
 
 // LogInfo logs a message at INFO level
-func (l Logger) LogInfo(function string, source string, text string) {
+func (l *Logger) LogInfo(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_INFO {
 		newbase, err := l.logRotate()
 		if err != nil {
@@ -127,7 +127,7 @@ func (l Logger) LogInfo(function string, source string, text string) {
 }
 
 // LogWarn logs a message at WARNING level
-func (l Logger) LogWarn(function string, source string, text string) {
+func (l *Logger) LogWarn(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_WARN {
 		newbase, err := l.logRotate()
 		if err != nil {
@@ -139,7 +139,7 @@ func (l Logger) LogWarn(function string, source string, text string) {
 }
 
 // LogError logs a message at ERROR level
-func (l Logger) LogError(function string, source string, text string) {
+func (l *Logger) LogError(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_ERROR {
 		newbase, err := l.logRotate()
 		if err != nil {
@@ -151,7 +151,7 @@ func (l Logger) LogError(function string, source string, text string) {
 }
 
 // LogFata logs a message at FATAL level and exits the application with the provided exit code
-func (l Logger) LogFatal(function string, source string, text string, exitcode int) {
+func (l *Logger) LogFatal(function string, source string, text string, exitcode int) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_FATAL {
 		newbase, err := l.logRotate()
 		if err != nil {
