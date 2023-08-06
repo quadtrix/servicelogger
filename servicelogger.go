@@ -180,7 +180,7 @@ func LogLevelToString(level LogLevel) string {
 	}
 }
 
-func (l *Logger) logRotate() (err error) {
+func (l Logger) logRotate() (err error) {
 	if l.rotate && !l.rotation_running {
 		l.rotation_running = true
 		//l.LogTrace("logRotate", "servicelogger", "Starting log rotation check")
@@ -192,7 +192,7 @@ func (l *Logger) logRotate() (err error) {
 			l.LogTrace("logRotate", "servicelogger", "Rotating log, closing logwriter")
 			_, err = os.Stat(fmt.Sprintf("%s.%d", l.filename, l.keep))
 			if err == nil {
-				err = os.Remove(fmt.Sprintf("%s.%d", l.filename, l.keep))
+				_ = os.Remove(fmt.Sprintf("%s.%d", l.filename, l.keep))
 			}
 			for i := l.keep - 1; i > 0; i-- {
 				_, err = os.Stat(fmt.Sprintf("%s.%d", l.filename, i))
