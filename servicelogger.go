@@ -93,7 +93,11 @@ func New(prefix string, filename string, minloglevel LogLevel, rotate bool, rota
 // LogTrace logs a message at TRACE level
 func (l Logger) LogTrace(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_TRACE {
-		l.logRotate()
+		newbase, err := l.logRotate()
+		if err != nil {
+			l.LogError("LogTrace", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
+		}
+		l.base = newbase
 		l.base.Println(fmt.Sprintf("TRACE   [%s] %s.%s %s", function, l.prefix, source, text))
 	}
 }
@@ -101,7 +105,11 @@ func (l Logger) LogTrace(function string, source string, text string) {
 // LogDebug logs a message at DEBUG level
 func (l Logger) LogDebug(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_DEBUG {
-		l.logRotate()
+		newbase, err := l.logRotate()
+		if err != nil {
+			l.LogError("LogDebug", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
+		}
+		l.base = newbase
 		l.base.Println(fmt.Sprintf("DEBUG   [%s] %s.%s %s", function, l.prefix, source, text))
 	}
 }
@@ -109,7 +117,11 @@ func (l Logger) LogDebug(function string, source string, text string) {
 // LogInfo logs a message at INFO level
 func (l Logger) LogInfo(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_INFO {
-		l.logRotate()
+		newbase, err := l.logRotate()
+		if err != nil {
+			l.LogError("LogInfo", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
+		}
+		l.base = newbase
 		l.base.Println(fmt.Sprintf("INFO    [%s] %s.%s %s", function, l.prefix, source, text))
 	}
 }
@@ -117,7 +129,11 @@ func (l Logger) LogInfo(function string, source string, text string) {
 // LogWarn logs a message at WARNING level
 func (l Logger) LogWarn(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_WARN {
-		l.logRotate()
+		newbase, err := l.logRotate()
+		if err != nil {
+			l.LogError("LogWarn", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
+		}
+		l.base = newbase
 		l.base.Println(fmt.Sprintf("WARNING [%s] %s.%s %s", function, l.prefix, source, text))
 	}
 }
@@ -125,7 +141,11 @@ func (l Logger) LogWarn(function string, source string, text string) {
 // LogError logs a message at ERROR level
 func (l Logger) LogError(function string, source string, text string) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_ERROR {
-		l.logRotate()
+		newbase, err := l.logRotate()
+		if err != nil {
+			l.LogError("LogError", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
+		}
+		l.base = newbase
 		l.base.Println(fmt.Sprintf("ERROR   [%s] %s.%s %s", function, l.prefix, source, text))
 	}
 }
@@ -133,7 +153,11 @@ func (l Logger) LogError(function string, source string, text string) {
 // LogFata logs a message at FATAL level and exits the application with the provided exit code
 func (l Logger) LogFatal(function string, source string, text string, exitcode int) {
 	if l.getFilteredLogLevel(fmt.Sprintf("%s.%s.%s", l.prefix, source, function)) <= LL_FATAL {
-		l.logRotate()
+		newbase, err := l.logRotate()
+		if err != nil {
+			l.LogError("LogFatal", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
+		}
+		l.base = newbase
 		l.base.Println(fmt.Sprintf("FATAL   [%s] %s.%s %s", function, l.prefix, source, text))
 		fmt.Println(fmt.Sprintf("FATAL: [%s] %s.%s %s", function, l.prefix, source, text))
 		os.Exit(exitcode)
@@ -180,13 +204,13 @@ func LogLevelToString(level LogLevel) string {
 	}
 }
 
-func (l Logger) logRotate() (err error) {
+func (l *Logger) logRotate() (nbase *log.Logger, err error) {
 	if l.rotate && !l.rotation_running {
 		l.rotation_running = true
 		//l.LogTrace("logRotate", "servicelogger", "Starting log rotation check")
 		filestats, err := os.Stat(l.filename)
 		if err != nil {
-			return err
+			return l.base, err
 		}
 		if filestats.Size() >= l.rotatesize {
 			l.LogTrace("logRotate", "servicelogger", "Rotating log, closing logwriter")
@@ -199,13 +223,13 @@ func (l Logger) logRotate() (err error) {
 				if err == nil {
 					err = os.Rename(fmt.Sprintf("%s.%d", l.filename, i), fmt.Sprintf("%s.%d", l.filename, i+1))
 					if err != nil {
-						return err
+						return l.base, err
 					}
 				}
 			}
 			err = os.Rename(l.filename, fmt.Sprintf("%s.1", l.filename))
 			if err != nil {
-				return err
+				return l.base, err
 			}
 			l.filehandle, err = os.OpenFile(l.filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
@@ -216,7 +240,7 @@ func (l Logger) logRotate() (err error) {
 		}
 		l.rotation_running = false
 	}
-	return nil
+	return l.base, nil
 }
 
 func (slog *Logger) ApplyNewSettings(newFile string, newLevel LogLevel, newRotation bool, newRotSize string, newKeep int) bool {
