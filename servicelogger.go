@@ -98,7 +98,7 @@ func (l *Logger) LogTrace(function string, source string, text string) {
 			l.LogError("LogTrace", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
 		}
 		l.base = newbase
-		l.base.Println(fmt.Sprintf("TRACE   [%s] %s.%s %s", function, l.prefix, source, text))
+		l.base.Printf("TRACE   [%s] %s.%s %s\n", function, l.prefix, source, text)
 	}
 }
 
@@ -110,7 +110,7 @@ func (l *Logger) LogDebug(function string, source string, text string) {
 			l.LogError("LogDebug", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
 		}
 		l.base = newbase
-		l.base.Println(fmt.Sprintf("DEBUG   [%s] %s.%s %s", function, l.prefix, source, text))
+		l.base.Printf("DEBUG   [%s] %s.%s %s\n", function, l.prefix, source, text)
 	}
 }
 
@@ -122,7 +122,7 @@ func (l *Logger) LogInfo(function string, source string, text string) {
 			l.LogError("LogInfo", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
 		}
 		l.base = newbase
-		l.base.Println(fmt.Sprintf("INFO    [%s] %s.%s %s", function, l.prefix, source, text))
+		l.base.Printf("INFO    [%s] %s.%s %s\n", function, l.prefix, source, text)
 	}
 }
 
@@ -134,7 +134,7 @@ func (l *Logger) LogWarn(function string, source string, text string) {
 			l.LogError("LogWarn", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
 		}
 		l.base = newbase
-		l.base.Println(fmt.Sprintf("WARNING [%s] %s.%s %s", function, l.prefix, source, text))
+		l.base.Printf("WARNING [%s] %s.%s %s\n", function, l.prefix, source, text)
 	}
 }
 
@@ -146,7 +146,7 @@ func (l *Logger) LogError(function string, source string, text string) {
 			l.LogError("LogError", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
 		}
 		l.base = newbase
-		l.base.Println(fmt.Sprintf("ERROR   [%s] %s.%s %s", function, l.prefix, source, text))
+		l.base.Printf("ERROR   [%s] %s.%s %s\n", function, l.prefix, source, text)
 	}
 }
 
@@ -158,8 +158,8 @@ func (l *Logger) LogFatal(function string, source string, text string, exitcode 
 			l.LogError("LogFatal", "servicelogger", fmt.Sprintf("Log rotation error: %s", err.Error()))
 		}
 		l.base = newbase
-		l.base.Println(fmt.Sprintf("FATAL   [%s] %s.%s %s", function, l.prefix, source, text))
-		fmt.Println(fmt.Sprintf("FATAL: [%s] %s.%s %s", function, l.prefix, source, text))
+		l.base.Printf("FATAL   [%s] %s.%s %s\n", function, l.prefix, source, text)
+		fmt.Printf("FATAL: [%s] %s.%s %s\n", function, l.prefix, source, text)
 		os.Exit(exitcode)
 	}
 }
@@ -233,7 +233,7 @@ func (l *Logger) logRotate() (nbase *log.Logger, err error) {
 			}
 			l.filehandle, err = os.OpenFile(l.filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
-				log.Fatal(fmt.Sprintf("FATAL: Unable to open log file %s: %s", l.filename, err.Error()))
+				log.Fatalf("FATAL: Unable to open log file %s: %s", l.filename, err.Error())
 			}
 			l.base = log.New(l.filehandle, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 			l.LogTrace("logRotate", "servicelogger", "Log rotated, reopened logwriter")
@@ -318,7 +318,7 @@ func (slog Logger) getFilteredLogLevel(facility string) LogLevel {
 		if strings.HasPrefix(facility, filter.filter) {
 			//fmt.Println(fmt.Sprintf("Filter %s matches", filter.filter))
 			if foundfilter > -1 {
-				if len(filter.filter) > len(slog.filters.filters[foundfilter].filter) {
+				if len(filter.filter) >= len(slog.filters.filters[foundfilter].filter) {
 					foundfilter = n
 					//fmt.Println("This is now the best match")
 				}
